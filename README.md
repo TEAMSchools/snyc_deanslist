@@ -1,1 +1,1 @@
-# snyc_deanslist
+# sync_deanslist
