@@ -1,5 +1,7 @@
 #!/user/bin/python3.6
 
+from datarobot_helpers import email
+from deanslist_config import CONFIG
 import os
 import json
 import requests
@@ -7,7 +9,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import zipfile
 from gcloud import storage
-from deanslist_config import CONFIG
 
 ENDPOINTS = CONFIG['endpoints']
 API_KEYS = CONFIG['api_keys']
@@ -167,4 +168,7 @@ def main():
         print('\t{0} sync complete!\tElapsed time = {1}'.format(endpoint_name, str(table_elapsed)))
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        email.send_email('DeansList sync error', e)
