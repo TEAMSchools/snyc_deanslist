@@ -1,21 +1,18 @@
 #!/user/bin/python3.6
 
-from datarobot_helpers import email
 from deanslist_config import CONFIG
+from datarobot_helpers import email, gcs
 import os
 import json
 import requests
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import zipfile
-from gcloud import storage
 
+BASE_URL = CONFIG['base_url']
 ENDPOINTS = CONFIG['endpoints']
 API_KEYS = CONFIG['api_keys']
 SAVE_PATH = CONFIG['save_path']
-GCLOUD_CREDENTIALS = CONFIG['gcloud_credentials']
-GCLOUD_PROJECT_NAME = CONFIG['gcloud_project_name']
-GCS_BUCKET_NAME = CONFIG['gcs_bucket_name']
 
 def get_table_data(endpoint_url, endpoint_params, api_keys=API_KEYS):
     """
@@ -89,24 +86,6 @@ def save_file(save_dir, filename, data):
 
     os.remove(filepath)
 
-def upload_to_gcs(endpoint_name, save_dir, filename, credentials=GCLOUD_CREDENTIALS, project_name=GCLOUD_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME):
-    """
-    upload file to a Google Cloud Storage blob
-        - filepath
-        - credentials
-        - project
-        - bucket_name
-    """
-    gcs_client = storage.Client(project_name, credentials)
-    gcs_bucket = gcs_client.get_bucket(bucket_name)
-
-    filepath = '{0}/{1}'.format(save_dir, filename)
-    gcs_path = 'deanslist/{}/{}'.format(endpoint_name, filename)
-    gcs_blob = gcs_bucket.blob(gcs_path)
-
-    print('\tUploading to Google Cloud Storage... {}'.format(gcs_blob))
-    gcs_blob.upload_from_filename(filepath)
-
 def main():
     if not os.path.isdir(SAVE_PATH):
         os.mkdir(SAVE_PATH)
@@ -117,7 +96,7 @@ def main():
 
         ## parse variables
         endpoint_name = e['name']
-        endpoint_url = e['url']
+        endpoint_url = '{0}{1}'.format(BASE_URL, e['endpoint'])
         endpoint_params = {}
 
         save_dir = '{0}{1}'.format(SAVE_PATH, endpoint_name)
@@ -161,7 +140,7 @@ def main():
             filename = filename.replace('.json','.zip')
 
             ## push JSON file to GCS
-            upload_to_gcs(endpoint_name, save_dir, filename)
+            gcs.upload_to_gcs('deanslist', endpoint_name, save_dir, filename)
 
         table_end = datetime.now()
         table_elapsed = table_end - table_start
